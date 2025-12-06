@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sickplanet/onvif-device-manager/internal/onvif"
-	"github.com/sickplanet/onvif-device-manager/internal/webrtc"
+	"github.com/sickplanet/onvif2go/internal/onvif"
+	"github.com/sickplanet/onvif2go/internal/webrtc"
 )
 
 // DeviceConfigRequest represents a device configuration update

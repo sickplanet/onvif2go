@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sickplanet/onvif-device-manager/internal/onvif"
+	"github.com/sickplanet/onvif2go/internal/onvif"
 )
 
 const (

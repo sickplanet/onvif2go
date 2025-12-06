@@ -30,7 +30,7 @@ The web interface provides a clean, intuitive layout with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sickplanet/ONVIF-Device-Manager-Rewritten-In-Go-with-web-ui.git
+git clone https://github.com/sickplanet/onvif2go-Rewritten-In-Go-with-web-ui.git
 cd ONVIF-Device-Manager-Rewritten-In-Go-with-web-ui
 
 # Build the application
@@ -43,7 +43,7 @@ go build -o onvif-manager ./cmd/server
 ### Using Go Install
 
 ```bash
-go install github.com/sickplanet/onvif-device-manager/cmd/server@latest
+go install github.com/sickplanet/onvif2go/cmd/server@latest
 ```
 
 ## Usage

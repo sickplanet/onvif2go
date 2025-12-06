@@ -1,4 +1,4 @@
-module github.com/sickplanet/onvif-device-manager
+module github.com/sickplanet/onvif2go
 
 go 1.24.10
 

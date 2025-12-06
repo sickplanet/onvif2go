@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sickplanet/onvif-device-manager/internal/onvif"
+	"github.com/sickplanet/onvif2go/internal/onvif"
 )
 
 // EventNotification represents a camera event pushed to clients
