@@ -297,7 +297,7 @@ func main() {
 	server.setupRoutes(mux)
 
 	addr := fmt.Sprintf(":%d", *port)
-	log.Printf("Starting ONVIF Device Manager v%s on http://localhost%s", Version, addr)
+	log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
 	log.Printf("RTSP Server listening on rtsp://localhost:%d", *rtspPort)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {

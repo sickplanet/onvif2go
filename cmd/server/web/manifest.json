@@ -1,6 +1,6 @@
 {
-  "name": "ONVIF GO Device Manager",
-  "short_name": "ONVIF_GO",
+  "name": "ONVIF2GO",
+  "short_name": "ONVIF2GO",
   "id": "/",
   "scope": "/",
   "start_url": "/?source=pwa",
@@ -8,7 +8,7 @@
   "orientation": "any",
   "background_color": "#151515",
   "theme_color": "#151515",
-  "description": "ONVIF Device Manager with Web User Interface",
+  "description": "ONVIF2GO Device Manager with Web User Interface",
   "icons": [
     {
       "src": "/static/icons/icon-192.png",

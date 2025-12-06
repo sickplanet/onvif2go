@@ -7,7 +7,7 @@
     <meta name="description" content="Manage, monitor, and control ONVIF-compatible IP cameras from any device.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ONVIF Device Manager</title>
+    <title>ONVIF2GO Device Manager</title>
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
@@ -25,7 +25,7 @@
     <div id="loginOverlay" class="login-overlay hidden">
         <div class="login-container">
             <div class="login-header">
-                <h1>🎥 ONVIF Device Manager</h1>
+                <h1>🎥 ONVIF2GO Device Manager</h1>
                 <p id="loginSubtitle">Please sign in to continue</p>
             </div>
             <form id="loginForm" class="login-form">
@@ -45,7 +45,7 @@
 
     <div id="appContainer" class="app-container hidden">
         <header class="app-header">
-            <h1>🎥 ONVIF Device Manager <span id="appVersion" style="font-size: 0.4em; opacity: 0.5; vertical-align: middle;"></span></h1>
+            <h1>🎥 ONVIF2GO Device Manager <span id="appVersion" style="font-size: 0.4em; opacity: 0.5; vertical-align: middle;"></span></h1>
             <div class="header-actions">
                 <button id="themeToggle" class="theme-toggle" title="Toggle theme">
                     <span class="theme-icon">🌙</span>
@@ -80,7 +80,7 @@
             <section class="content">
                 <div id="welcomePane" class="welcome-pane">
                     <div class="welcome-content">
-                        <h2>Welcome to ONVIF Device Manager</h2>
+                        <h2>Welcome to ONVIF2GO Device Manager</h2>
                         <p>Manage and view your ONVIF-compatible IP cameras</p>
                         <div class="feature-list">
                             <div class="feature">
@@ -123,26 +123,54 @@
                     <div class="device-tabs">
                         <button class="tab-btn active" data-tab="stream">Live Stream</button>
                         <button class="tab-btn" data-tab="info">Device Info</button>
-                        <button class="tab-btn" data-tab="ptz">PTZ Control</button>
                         <button class="tab-btn" data-tab="snapshots">Snapshots</button>
                         <button class="tab-btn" data-tab="config">Camera Config</button>
                     </div>
 
                     <div class="tab-content">
                         <div id="streamTab" class="tab-pane active">
-                            <div class="stream-container">
-                                <div class="profile-selector">
-                                    <label for="profileSelect">Profile:</label>
-                                    <select id="profileSelect"></select>
-                                    <button id="startStreamBtn" class="btn btn-primary">Start Stream</button>
-                                    <button id="stopStreamBtn" class="btn btn-secondary" disabled>Stop</button>
-                                    <button id="snapshotBtn" class="btn btn-secondary">📷 Snapshot</button>
+                            <div class="stream-layout">
+                                <div class="stream-main">
+                                    <div class="stream-container">
+                                        <div class="profile-selector">
+                                            <label for="profileSelect">Profile:</label>
+                                            <select id="profileSelect"></select>
+                                            <button id="startStreamBtn" class="btn btn-primary">Start Stream</button>
+                                            <button id="stopStreamBtn" class="btn btn-secondary" disabled>Stop</button>
+                                            <button id="snapshotBtn" class="btn btn-secondary">📷 Snapshot</button>
+                                        </div>
+                                        <div class="video-wrapper">
+                                            <video id="videoPlayer" autoplay playsinline muted></video>
+                                            <img id="snapshotImg" class="snapshot-img hidden" alt="Snapshot">
+                                            <div id="streamStatus" class="stream-status">
+                                                <span class="status-text">Ready to stream</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="video-wrapper">
-                                    <video id="videoPlayer" autoplay playsinline muted></video>
-                                    <img id="snapshotImg" class="snapshot-img hidden" alt="Snapshot">
-                                    <div id="streamStatus" class="stream-status">
-                                        <span class="status-text">Ready to stream</span>
+                                <div class="stream-sidebar">
+                                    <div class="ptz-container">
+                                        <div class="ptz-controls">
+                                            <div class="ptz-dpad">
+                                                <button class="ptz-btn" data-direction="up" title="Tilt Up">▲</button>
+                                                <div class="ptz-row">
+                                                    <button class="ptz-btn" data-direction="left" title="Pan Left">◀</button>
+                                                    <button class="ptz-btn ptz-home" data-direction="home" title="Home">⌂</button>
+                                                    <button class="ptz-btn" data-direction="right" title="Pan Right">▶</button>
+                                                </div>
+                                                <button class="ptz-btn" data-direction="down" title="Tilt Down">▼</button>
+                                            </div>
+                                            <div class="zoom-controls">
+                                                <button class="ptz-btn zoom-btn" data-direction="zoomIn" title="Zoom In">🔍+</button>
+                                                <button class="ptz-btn zoom-btn" data-direction="zoomOut" title="Zoom Out">🔍-</button>
+                                            </div>
+                                        </div>
+                                        <div class="ptz-presets">
+                                            <h3>Presets</h3>
+                                            <div id="presetList" class="preset-list">
+                                                <p class="no-presets">No presets available</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -178,32 +206,6 @@
                                 <div class="info-section">
                                     <h3>Profiles</h3>
                                     <ul id="profileList" class="profile-list"></ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="ptzTab" class="tab-pane hidden">
-                            <div class="ptz-container">
-                                <div class="ptz-controls">
-                                    <div class="ptz-dpad">
-                                        <button class="ptz-btn" data-direction="up" title="Tilt Up">▲</button>
-                                        <div class="ptz-row">
-                                            <button class="ptz-btn" data-direction="left" title="Pan Left">◀</button>
-                                            <button class="ptz-btn ptz-home" data-direction="home" title="Home">⌂</button>
-                                            <button class="ptz-btn" data-direction="right" title="Pan Right">▶</button>
-                                        </div>
-                                        <button class="ptz-btn" data-direction="down" title="Tilt Down">▼</button>
-                                    </div>
-                                    <div class="zoom-controls">
-                                        <button class="ptz-btn zoom-btn" data-direction="zoomIn" title="Zoom In">🔍+</button>
-                                        <button class="ptz-btn zoom-btn" data-direction="zoomOut" title="Zoom Out">🔍-</button>
-                                    </div>
-                                </div>
-                                <div class="ptz-presets">
-                                    <h3>Presets</h3>
-                                    <div id="presetList" class="preset-list">
-                                        <p class="no-presets">No presets available</p>
-                                    </div>
                                 </div>
                             </div>
                         </div>

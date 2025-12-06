@@ -60,7 +60,7 @@ function showCamera() {
 
     cameraName.textContent = camera.name;
     cameraId.textContent = `ID: ${camera.id}`;
-    document.title = `${camera.name} - ONVIF Device Manager`;
+    document.title = `${camera.name} - ONVIF2GO Device Manager`;
 
     // Show PTZ controls if allowed
     if (camera.allowPtz) {
