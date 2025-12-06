@@ -515,7 +515,12 @@ class ONVIFDeviceManager {
                 // Try to parse as JSON first
                 try {
                     const json = JSON.parse(text);
-                    errorMessage = json.error || json.message || json.Error || json.Message || errorMessage;
+                    if (json.error && json.message){
+                        errorMessage = `${json.error}: ${json.message}`;
+                    }else{
+                        errorMessage = json.error || json.message || json.Error || json.Message || errorMessage;
+                    } 
+                    
                 } catch {
                     // If not JSON, check for SOAP XML error
                     if (text.includes('SOAP-ENV') || text.includes('soap:Envelope') || text.includes('<Fault>')) {
@@ -1285,7 +1290,9 @@ class ONVIFDeviceManager {
             });
         } catch (error) {
             console.error('PTZ move error:', error);
+console.log('Original error message:', error.message);
             const friendlyMessage = this.mapPTZError(error.message);
+
             this.showToast(friendlyMessage, 'error');
         }
     }

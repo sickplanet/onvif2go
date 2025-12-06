@@ -30,14 +30,14 @@ The web interface provides a clean, intuitive layout with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sickplanet/onvif2go-Rewritten-In-Go-with-web-ui.git
-cd ONVIF-Device-Manager-Rewritten-In-Go-with-web-ui
+git clone https://github.com/sickplanet/onvif2go.git
+cd onvif2go
 
 # Build the application
-go build -o onvif-manager ./cmd/server
+go build -o onvif2go ./cmd/server
 
 # Run the server
-./onvif-manager -port 8080
+./onvif2go -port 8080
 ```
 
 ### Using Go Install
@@ -51,7 +51,7 @@ go install github.com/sickplanet/onvif2go/cmd/server@latest
 ### Starting the Server
 
 ```bash
-./onvif-manager -port 8080
+./onvif2go -port 8080
 ```
 
 Then open your browser and navigate to `http://localhost:8080`
@@ -137,7 +137,7 @@ The web interface works in all modern browsers that support WebRTC:
 
 ## License
 
-MIT License - See LICENSE for details
+Apache License - See LICENSE for details
 
 ## Credits
 
