@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#151515">
+    <meta name="description" content="Manage, monitor, and control ONVIF-compatible IP cameras from any device.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>ONVIF Device Manager</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>🎥 ONVIF Device Manager</h1>
+                <p id="loginSubtitle">Please sign in to continue</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+                <div id="loginError" class="login-error hidden"></div>
+                <button type="submit" id="loginBtn" class="btn btn-primary btn-full">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="appContainer" class="app-container hidden">
+        <header class="app-header">
+            <h1>🎥 ONVIF Device Manager <span id="appVersion" style="font-size: 0.4em; opacity: 0.5; vertical-align: middle;"></span></h1>
+            <div class="header-actions">
+                <button id="themeToggle" class="theme-toggle" title="Toggle theme">
+                    <span class="theme-icon">🌙</span>
+                    <span class="theme-text">Dark</span>
+                </button>
+                <button id="discoverBtn" class="btn btn-primary admin-only">
+                    <span class="icon">🔍</span> Discover Devices
+                </button>
+                <button id="addDeviceBtn" class="btn btn-secondary admin-only">
+                    <span class="icon">➕</span> Add Device
+                </button>
+                <button id="manageUsersBtn" class="btn btn-secondary admin-only">
+                    <span class="icon">👥</span> Manage Users
+                </button>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <span class="icon">🚪</span> Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <aside class="sidebar">
+                <div class="device-list-header">
+                    <h2>Devices</h2>
+                    <span id="deviceCount" class="badge">0</span>
+                </div>
+                <div id="deviceList" class="device-list">
+                    <p class="no-devices">No devices added yet</p>
+                </div>
+            </aside>
+
+            <section class="content">
+                <div id="welcomePane" class="welcome-pane">
+                    <div class="welcome-content">
+                        <h2>Welcome to ONVIF Device Manager</h2>
+                        <p>Manage and view your ONVIF-compatible IP cameras</p>
+                        <div class="feature-list">
+                            <div class="feature">
+                                <span class="feature-icon">🔍</span>
+                                <div>
+                                    <h3>Discover Cameras</h3>
+                                    <p>Automatically find ONVIF devices on your network</p>
+                                </div>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">📹</span>
+                                <div>
+                                    <h3>Live Streaming</h3>
+                                    <p>View live video streams via WebRTC</p>
+                                </div>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">🎮</span>
+                                <div>
+                                    <h3>PTZ Control</h3>
+                                    <p>Pan, tilt, and zoom your cameras</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="devicePane" class="device-pane hidden">
+                    <div class="device-header">
+                        <div class="device-info">
+                            <h2 id="deviceName">Device Name</h2>
+                            <p id="deviceEndpoint" class="device-endpoint"></p>
+                        </div>
+                        <div class="device-actions">
+                            <button id="refreshDeviceBtn" class="btn btn-icon" title="Refresh">🔄</button>
+                            <button id="deleteDeviceBtn" class="btn btn-icon btn-danger" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="device-tabs">
+                        <button class="tab-btn active" data-tab="stream">Live Stream</button>
+                        <button class="tab-btn" data-tab="info">Device Info</button>
+                        <button class="tab-btn" data-tab="ptz">PTZ Control</button>
+                        <button class="tab-btn" data-tab="snapshots">Snapshots</button>
+                        <button class="tab-btn" data-tab="config">Camera Config</button>
+                    </div>
+
+                    <div class="tab-content">
+                        <div id="streamTab" class="tab-pane active">
+                            <div class="stream-container">
+                                <div class="profile-selector">
+                                    <label for="profileSelect">Profile:</label>
+                                    <select id="profileSelect"></select>
+                                    <button id="startStreamBtn" class="btn btn-primary">Start Stream</button>
+                                    <button id="stopStreamBtn" class="btn btn-secondary" disabled>Stop</button>
+                                    <button id="snapshotBtn" class="btn btn-secondary">📷 Snapshot</button>
+                                </div>
+                                <div class="video-wrapper">
+                                    <video id="videoPlayer" autoplay playsinline muted></video>
+                                    <img id="snapshotImg" class="snapshot-img hidden" alt="Snapshot">
+                                    <div id="streamStatus" class="stream-status">
+                                        <span class="status-text">Ready to stream</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="infoTab" class="tab-pane hidden">
+                            <div class="info-grid">
+                                <div class="info-section">
+                                    <h3>Device Information</h3>
+                                    <table class="info-table">
+                                        <tr>
+                                            <td>Manufacturer</td>
+                                            <td id="infoManufacturer">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Model</td>
+                                            <td id="infoModel">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Firmware</td>
+                                            <td id="infoFirmware">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Serial Number</td>
+                                            <td id="infoSerial">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Hardware ID</td>
+                                            <td id="infoHardware">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="info-section">
+                                    <h3>Profiles</h3>
+                                    <ul id="profileList" class="profile-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ptzTab" class="tab-pane hidden">
+                            <div class="ptz-container">
+                                <div class="ptz-controls">
+                                    <div class="ptz-dpad">
+                                        <button class="ptz-btn" data-direction="up" title="Tilt Up">▲</button>
+                                        <div class="ptz-row">
+                                            <button class="ptz-btn" data-direction="left" title="Pan Left">◀</button>
+                                            <button class="ptz-btn ptz-home" data-direction="home" title="Home">⌂</button>
+                                            <button class="ptz-btn" data-direction="right" title="Pan Right">▶</button>
+                                        </div>
+                                        <button class="ptz-btn" data-direction="down" title="Tilt Down">▼</button>
+                                    </div>
+                                    <div class="zoom-controls">
+                                        <button class="ptz-btn zoom-btn" data-direction="zoomIn" title="Zoom In">🔍+</button>
+                                        <button class="ptz-btn zoom-btn" data-direction="zoomOut" title="Zoom Out">🔍-</button>
+                                    </div>
+                                </div>
+                                <div class="ptz-presets">
+                                    <h3>Presets</h3>
+                                    <div id="presetList" class="preset-list">
+                                        <p class="no-presets">No presets available</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="snapshotsTab" class="tab-pane hidden">
+                            <div class="snapshots-container">
+                                <div class="snapshots-header">
+                                    <h3>Snapshot Gallery</h3>
+                                    <button id="refreshSnapshotsBtn" class="btn btn-secondary btn-sm">Refresh</button>
+                                </div>
+                                <div id="snapshotList" class="snapshot-grid">
+                                    <!-- Snapshots will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="configTab" class="tab-pane hidden">
+                            <div class="config-container">
+                                <div class="config-section">
+                                    <h3>Credentials</h3>
+                                    <form id="configCredentialsForm" class="config-form">
+                                        <div class="form-group">
+                                            <label for="configUsername">Username</label>
+                                            <input type="text" id="configUsername" placeholder="admin">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configPassword">Password</label>
+                                            <input type="password" id="configPassword" placeholder="password">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary">Update Credentials</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="config-section">
+                                    <h3>Public Access</h3>
+                                    <form id="publicAccessForm" class="config-form">
+                                        <div class="form-group-inline admin-only">
+                                            <label>
+                                                <input type="checkbox" id="configIsPublic">
+                                                Make this camera public
+                                            </label>
+                                            <p class="text-muted small">When enabled, this camera can be viewed without login</p>
+                                        </div>
+                                        <div class="form-group-inline admin-only">
+                                            <label>
+                                                <input type="checkbox" id="configAllowPublicPTZ">
+                                                Allow public PTZ control
+                                            </label>
+                                            <p class="text-muted small">When enabled, anyone can control PTZ without login</p>
+                                        </div>
+                                        <div id="publicUrlSection" class="form-group hidden admin-only">
+                                            <label for="configPublicUrl">Public URL</label>
+                                            <div class="public-url-row">
+                                                <input type="text" id="configPublicUrl" readonly>
+                                                <button type="button" id="copyPublicUrlBtn" class="btn btn-secondary">Copy</button>
+                                                <button type="button" id="openPublicUrlBtn" class="btn btn-secondary">Open</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-actions admin-only">
+                                            <button type="submit" class="btn btn-primary">Save Public Settings</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="eventConfigSection" class="config-section hidden">
+                                    <h3>Notifications</h3>
+                                    <form id="notificationSettingsForm" class="config-form">
+                                        <div class="form-group-inline">
+                                            <label>
+                                                <input type="checkbox" id="configEnableEvents">
+                                                Enable ONVIF event notifications
+                                            </label>
+                                            <p class="text-muted small">Receive motion or alarm events as operating system notifications.</p>
+                                        </div>
+                                        <div class="form-group-inline admin-only">
+                                            <label for="configEventInterval">Event interval (seconds)</label>
+                                            <input type="number" id="configEventInterval" min="1" value="1">
+                                            <p class="text-muted small">Minimum delay between notifications to prevent spam.</p>
+                                        </div>
+                                        <div class="form-group-inline">
+                                            <button type="button" id="configEnableBrowserNotifications" class="btn btn-secondary">Enable Browser Notifications</button>
+                                            <p class="text-muted small" id="configNotificationStatus">Browser permission is required to show notifications.</p>
+                                        </div>
+                                        <div class="form-actions admin-only">
+                                            <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div id="addDeviceModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Device</h2>
+                <button class="modal-close" id="closeAddModal">&times;</button>
+            </div>
+            <form id="addDeviceForm">
+                <div class="form-group">
+                    <label for="deviceNameInput">Name (optional)</label>
+                    <input type="text" id="deviceNameInput" placeholder="My Camera">
+                </div>
+                <div class="form-group">
+                    <label for="deviceEndpointInput">Endpoint URL *</label>
+                    <input type="url" id="deviceEndpointInput" placeholder="http://192.168.1.100" required>
+                </div>
+                <div class="form-group">
+                    <label for="deviceUsernameInput">Username</label>
+                    <input type="text" id="deviceUsernameInput" placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label for="devicePasswordInput">Password</label>
+                    <input type="password" id="devicePasswordInput" placeholder="password">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelAddDevice" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Discover Modal -->
+    <div id="discoverModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Discover Devices</h2>
+                <button class="modal-close" id="closeDiscoverModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="discoverStatus" class="discover-status">
+                    <div class="spinner"></div>
+                    <p>Searching for ONVIF devices...</p>
+                </div>
+                <div id="discoveredDevices" class="discovered-devices hidden"></div>
+            </div>
+            <div class="form-actions">
+                <button id="closeDiscoverBtn" class="btn btn-secondary">Close</button>
+                <button id="addSelectedBtn" class="btn btn-primary" disabled>Add Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credential Modal -->
+    <div id="credentialModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Enter Credentials</h2>
+                <button class="modal-close" id="closeCredentialModal">&times;</button>
+            </div>
+            <form id="credentialForm">
+                <div class="form-group">
+                    <label for="credentialUsername">Username</label>
+                    <input type="text" id="credentialUsername" placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label for="credentialPassword">Password</label>
+                    <input type="password" id="credentialPassword" placeholder="password">
+                </div>
+                <div id="credentialStatus" class="credential-status hidden"></div>
+                <div class="form-actions">
+                    <button type="button" id="cancelCredential" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="testCredentialBtn" class="btn btn-secondary">Test Connection</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Users Modal -->
+    <div id="manageUsersModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Manage Users</h2>
+                <button class="modal-close" id="closeManageUsersModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-management">
+                    <div class="user-list-section">
+                        <div class="user-list-header">
+                            <h3>Users</h3>
+                            <button id="addUserBtn" class="btn btn-primary btn-sm">+ Add User</button>
+                        </div>
+                        <div id="userList" class="user-list">
+                            <p class="no-users">Loading users...</p>
+                        </div>
+                    </div>
+                    <div id="userDetailsSection" class="user-details-section hidden">
+                        <h3 id="userDetailsTitle">User Details</h3>
+                        <form id="userDetailsForm">
+                            <div class="form-group">
+                                <label for="userUsername">Username</label>
+                                <input type="text" id="userUsername" placeholder="username" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userPassword">Password</label>
+                                <input type="password" id="userPassword" placeholder="Leave blank to keep current">
+                            </div>
+                            <div class="form-group-inline">
+                                <label>
+                                    <input type="checkbox" id="userIsAdmin">
+                                    Administrator
+                                </label>
+                            </div>
+                            <p id="userAdminAccessNote" class="text-muted hidden">Administrators automatically have access to all cameras and PTZ controls.</p>
+                            <div class="form-group" id="userCameraGroup">
+                                <label>Camera Access</label>
+                                <div id="userCameras" class="checkbox-list">
+                                    <p class="text-muted">No cameras available</p>
+                                </div>
+                            </div>
+                            <div class="form-group" id="userPTZGroup">
+                                <label>PTZ Control Access</label>
+                                <div id="userPTZAllowed" class="checkbox-list">
+                                    <p class="text-muted">No cameras available</p>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancelUserEdit" class="btn btn-secondary">Cancel</button>
+                                <button type="button" id="deleteUserBtn" class="btn btn-danger hidden">Delete</button>
+                                <button type="submit" class="btn btn-primary">Save User</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button id="closeManageUsersBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Overlay -->
+    <div id="lightboxOverlay" class="lightbox-overlay hidden">
+        <div class="lightbox-content">
+            <button id="lightboxClose" class="lightbox-close">&times;</button>
+            <img id="lightboxImage" src="" alt="Snapshot">
+            <div id="lightboxCaption" class="lightbox-caption"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js")
+                    .then(() => console.log("Service worker registered"))
+                    .catch(err => console.error("Service worker registration failed", err));
+            });
+        }
+    </script>
+
+</body>
+</html>

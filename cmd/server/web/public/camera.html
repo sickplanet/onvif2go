@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Camera - ONVIF Device Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/public.css">
+</head>
+<body>
+    <div class="public-container">
+        <a href="/public/index.html" class="back-link">← Back to cameras</a>
+
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <p>Loading camera...</p>
+        </div>
+
+        <div id="errorState" class="error hidden">
+            <p id="errorMessage">Camera not found</p>
+        </div>
+
+        <div id="cameraView" class="hidden">
+            <header class="camera-header">
+                <h1 id="cameraName">Camera</h1>
+                <p class="camera-id" id="cameraId"></p>
+            </header>
+
+            <div class="stream-controls">
+                <button id="startStreamBtn" class="btn btn-primary">▶ Start Stream</button>
+                <button id="stopStreamBtn" class="btn btn-secondary" disabled>⏹ Stop</button>
+                <button id="snapshotBtn" class="btn btn-secondary">📷 Snapshot</button>
+            </div>
+
+            <div class="video-container">
+                <video id="videoPlayer" autoplay playsinline muted></video>
+                <img id="snapshotImg" class="hidden" alt="Snapshot" style="width: 100%; height: 100%; object-fit: contain;">
+                <div id="streamStatus" class="stream-status">Ready to stream</div>
+            </div>
+
+            <div id="ptzSection" class="ptz-section hidden">
+                <h3>PTZ Control</h3>
+                <div class="ptz-controls">
+                    <div class="ptz-dpad">
+                        <button class="ptz-btn" data-direction="up" title="Tilt Up">▲</button>
+                        <div class="ptz-row">
+                            <button class="ptz-btn" data-direction="left" title="Pan Left">◀</button>
+                            <button class="ptz-btn" data-direction="home" title="Home">⌂</button>
+                            <button class="ptz-btn" data-direction="right" title="Pan Right">▶</button>
+                        </div>
+                        <button class="ptz-btn" data-direction="down" title="Tilt Down">▼</button>
+                    </div>
+                    <div class="zoom-controls">
+                        <button class="ptz-btn zoom-btn" data-direction="zoomIn" title="Zoom In">🔍+</button>
+                        <button class="ptz-btn zoom-btn" data-direction="zoomOut" title="Zoom Out">🔍-</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/publicCamera.js"></script>
+</body>
+</html>
