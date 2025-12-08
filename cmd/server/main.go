@@ -399,11 +399,19 @@ func main() {
 
 	if config.UseSSL {
 		if config.SSLCert == "" || config.SSLKey == "" {
-			log.Fatal("SSL enabled but sslCert or sslKey not specified in config")
-		}
-		log.Printf("Starting ONVIF2GO v%s on https://localhost%s", Version, addr)
-		if err := http.ListenAndServeTLS(addr, config.SSLCert, config.SSLKey, mux); err != nil {
-			log.Fatal(err)
+			//log.Fatal("SSL enabled but sslCert or sslKey not specified in config")
+			// Fallback to non-SSL
+			log.Printf("SSL enabled but sslCert or sslKey not specified in config, falling back to non-SSL")
+			log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
+			if err := http.ListenAndServe(addr, mux); err != nil {
+				log.Fatal(err)
+			}
+
+		} else {
+			log.Printf("Starting ONVIF2GO v%s on https://localhost%s", Version, addr)
+			if err := http.ListenAndServeTLS(addr, config.SSLCert, config.SSLKey, mux); err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
