@@ -740,3 +740,306 @@ func ValidateEndpoint(endpoint string) error {
 
 	return nil
 }
+
+// SystemReboot reboots the device
+func (c *Client) SystemReboot() (string, error) {
+	body := `<tds:SystemReboot/>`
+	serviceURL := c.endpoint + "/onvif/device_service"
+
+	resp, err := c.sendRequest(serviceURL, "http://www.onvif.org/ver10/device/wsdl/SystemReboot", body, true)
+	if err != nil {
+		return "", err
+	}
+
+	var response struct {
+		XMLName xml.Name `xml:"Envelope"`
+		Body    struct {
+			SystemRebootResponse struct {
+				Message string `xml:"Message"`
+			} `xml:"SystemRebootResponse"`
+		} `xml:"Body"`
+	}
+
+	if err := xml.Unmarshal(resp, &response); err != nil {
+		return "", err
+	}
+
+	return response.Body.SystemRebootResponse.Message, nil
+}
+
+// SystemDateAndTime represents the device system date and time
+type SystemDateAndTime struct {
+	DateTimeType    string
+	DaylightSavings bool
+	TimeZone        string
+	UTCDateTime     time.Time
+}
+
+// GetSystemDateAndTime retrieves the device system date and time
+func (c *Client) GetSystemDateAndTime() (*SystemDateAndTime, error) {
+	body := `<tds:GetSystemDateAndTime/>`
+	serviceURL := c.endpoint + "/onvif/device_service"
+
+	resp, err := c.sendRequest(serviceURL, "http://www.onvif.org/ver10/device/wsdl/GetSystemDateAndTime", body, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		XMLName xml.Name `xml:"Envelope"`
+		Body    struct {
+			GetSystemDateAndTimeResponse struct {
+				SystemDateAndTime struct {
+					DateTimeType    string `xml:"DateTimeType"`
+					DaylightSavings bool   `xml:"DaylightSavings"`
+					TimeZone        struct {
+						TZ string `xml:"TZ"`
+					} `xml:"TimeZone"`
+					UTCDateTime struct {
+						Time struct {
+							Hour   int `xml:"Hour"`
+							Minute int `xml:"Minute"`
+							Second int `xml:"Second"`
+						} `xml:"Time"`
+						Date struct {
+							Year  int `xml:"Year"`
+							Month int `xml:"Month"`
+							Day   int `xml:"Day"`
+						} `xml:"Date"`
+					} `xml:"UTCDateTime"`
+				} `xml:"SystemDateAndTime"`
+			} `xml:"GetSystemDateAndTimeResponse"`
+		} `xml:"Body"`
+	}
+
+	if err := xml.Unmarshal(resp, &response); err != nil {
+		return nil, err
+	}
+
+	sdt := response.Body.GetSystemDateAndTimeResponse.SystemDateAndTime
+	utc := time.Date(
+		sdt.UTCDateTime.Date.Year,
+		time.Month(sdt.UTCDateTime.Date.Month),
+		sdt.UTCDateTime.Date.Day,
+		sdt.UTCDateTime.Time.Hour,
+		sdt.UTCDateTime.Time.Minute,
+		sdt.UTCDateTime.Time.Second,
+		0,
+		time.UTC,
+	)
+
+	return &SystemDateAndTime{
+		DateTimeType:    sdt.DateTimeType,
+		DaylightSavings: sdt.DaylightSavings,
+		TimeZone:        sdt.TimeZone.TZ,
+		UTCDateTime:     utc,
+	}, nil
+}
+
+// NetworkInterface represents a network interface
+type NetworkInterface struct {
+	Token   string
+	Enabled bool
+	Name    string
+	MAC     string
+	IPv4    string
+}
+
+// GetNetworkInterfaces retrieves network interfaces
+func (c *Client) GetNetworkInterfaces() ([]NetworkInterface, error) {
+	body := `<tds:GetNetworkInterfaces/>`
+	serviceURL := c.endpoint + "/onvif/device_service"
+
+	resp, err := c.sendRequest(serviceURL, "http://www.onvif.org/ver10/device/wsdl/GetNetworkInterfaces", body, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		XMLName xml.Name `xml:"Envelope"`
+		Body    struct {
+			GetNetworkInterfacesResponse struct {
+				NetworkInterfaces []struct {
+					Token   string `xml:"token,attr"`
+					Enabled bool   `xml:"Enabled"`
+					Info    struct {
+						Name      string `xml:"Name"`
+						HwAddress string `xml:"HwAddress"`
+					} `xml:"Info"`
+					IPv4 struct {
+						Config struct {
+							Manual []struct {
+								Address string `xml:"Address"`
+							} `xml:"Manual"`
+							FromDHCP struct {
+								Address string `xml:"Address"`
+							} `xml:"FromDHCP"`
+						} `xml:"Config"`
+					} `xml:"IPv4"`
+				} `xml:"NetworkInterfaces"`
+			} `xml:"GetNetworkInterfacesResponse"`
+		} `xml:"Body"`
+	}
+
+	if err := xml.Unmarshal(resp, &response); err != nil {
+		return nil, err
+	}
+
+	interfaces := make([]NetworkInterface, 0)
+	for _, ni := range response.Body.GetNetworkInterfacesResponse.NetworkInterfaces {
+		ip := ""
+		if len(ni.IPv4.Config.Manual) > 0 {
+			ip = ni.IPv4.Config.Manual[0].Address
+		} else if ni.IPv4.Config.FromDHCP.Address != "" {
+			ip = ni.IPv4.Config.FromDHCP.Address
+		}
+
+		interfaces = append(interfaces, NetworkInterface{
+			Token:   ni.Token,
+			Enabled: ni.Enabled,
+			Name:    ni.Info.Name,
+			MAC:     ni.Info.HwAddress,
+			IPv4:    ip,
+		})
+	}
+
+	return interfaces, nil
+}
+
+// VideoEncoderConfiguration represents a video encoder configuration
+type VideoEncoderConfiguration struct {
+	Token            string  `json:"token"`
+	Name             string  `json:"name"`
+	Encoding         string  `json:"encoding"`
+	ResolutionWidth  int     `json:"width"`
+	ResolutionHeight int     `json:"height"`
+	Quality          float64 `json:"quality"`
+	FrameRateLimit   int     `json:"frameRate"`
+	BitrateLimit     int     `json:"bitrate"`
+}
+
+// GetVideoEncoderConfigurations retrieves video encoder configurations
+func (c *Client) GetVideoEncoderConfigurations() ([]VideoEncoderConfiguration, error) {
+	body := `<trt:GetVideoEncoderConfigurations/>`
+	serviceURL := c.endpoint + "/onvif/media_service"
+
+	resp, err := c.sendRequest(serviceURL, "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations", body, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		XMLName xml.Name `xml:"Envelope"`
+		Body    struct {
+			GetVideoEncoderConfigurationsResponse struct {
+				Configurations []struct {
+					Token      string `xml:"token,attr"`
+					Name       string `xml:"Name"`
+					Encoding   string `xml:"Encoding"`
+					Resolution struct {
+						Width  int `xml:"Width"`
+						Height int `xml:"Height"`
+					} `xml:"Resolution"`
+					Quality     float64 `xml:"Quality"`
+					RateControl struct {
+						FrameRateLimit int `xml:"FrameRateLimit"`
+						BitrateLimit   int `xml:"BitrateLimit"`
+					} `xml:"RateControl"`
+				} `xml:"Configurations"`
+			} `xml:"GetVideoEncoderConfigurationsResponse"`
+		} `xml:"Body"`
+	}
+
+	if err := xml.Unmarshal(resp, &response); err != nil {
+		return nil, err
+	}
+
+	configs := make([]VideoEncoderConfiguration, 0)
+	for _, cfg := range response.Body.GetVideoEncoderConfigurationsResponse.Configurations {
+		configs = append(configs, VideoEncoderConfiguration{
+			Token:            cfg.Token,
+			Name:             cfg.Name,
+			Encoding:         cfg.Encoding,
+			ResolutionWidth:  cfg.Resolution.Width,
+			ResolutionHeight: cfg.Resolution.Height,
+			Quality:          cfg.Quality,
+			FrameRateLimit:   cfg.RateControl.FrameRateLimit,
+			BitrateLimit:     cfg.RateControl.BitrateLimit,
+		})
+	}
+
+	return configs, nil
+}
+
+// PTZNode represents a PTZ node
+type PTZNode struct {
+	Token                  string   `json:"token"`
+	Name                   string   `json:"name"`
+	FixedHomePos           bool     `json:"fixedHomePos"`
+	GeoMove                bool     `json:"geoMove"`
+	SupportedPTZSpaces     []string `json:"supportedPTZSpaces"`
+	MaximumNumberOfPresets int      `json:"maximumNumberOfPresets"`
+	HomeSupported          bool     `json:"homeSupported"`
+}
+
+// GetNodes retrieves PTZ nodes
+func (c *Client) GetNodes() ([]PTZNode, error) {
+	body := `<tptz:GetNodes/>`
+	serviceURL := c.endpoint + "/onvif/ptz_service"
+
+	resp, err := c.sendRequest(serviceURL, "http://www.onvif.org/ver20/ptz/wsdl/GetNodes", body, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		XMLName xml.Name `xml:"Envelope"`
+		Body    struct {
+			GetNodesResponse struct {
+				PTZNode []struct {
+					Token              string `xml:"token,attr"`
+					Name               string `xml:"Name"`
+					FixedHomePos       bool   `xml:"FixedHomePos,attr"`
+					GeoMove            bool   `xml:"GeoMove,attr"`
+					SupportedPTZSpaces struct {
+						ContinuousPanTiltVelocitySpace []struct {
+							URI string `xml:"URI"`
+						} `xml:"ContinuousPanTiltVelocitySpace"`
+						ContinuousZoomVelocitySpace []struct {
+							URI string `xml:"URI"`
+						} `xml:"ContinuousZoomVelocitySpace"`
+					} `xml:"SupportedPTZSpaces"`
+					MaximumNumberOfPresets int  `xml:"MaximumNumberOfPresets"`
+					HomeSupported          bool `xml:"HomeSupported"`
+				} `xml:"PTZNode"`
+			} `xml:"GetNodesResponse"`
+		} `xml:"Body"`
+	}
+
+	if err := xml.Unmarshal(resp, &response); err != nil {
+		return nil, err
+	}
+
+	nodes := make([]PTZNode, 0)
+	for _, n := range response.Body.GetNodesResponse.PTZNode {
+		spaces := make([]string, 0)
+		for _, s := range n.SupportedPTZSpaces.ContinuousPanTiltVelocitySpace {
+			spaces = append(spaces, s.URI)
+		}
+		for _, s := range n.SupportedPTZSpaces.ContinuousZoomVelocitySpace {
+			spaces = append(spaces, s.URI)
+		}
+
+		nodes = append(nodes, PTZNode{
+			Token:                  n.Token,
+			Name:                   n.Name,
+			FixedHomePos:           n.FixedHomePos,
+			GeoMove:                n.GeoMove,
+			SupportedPTZSpaces:     spaces,
+			MaximumNumberOfPresets: n.MaximumNumberOfPresets,
+			HomeSupported:          n.HomeSupported,
+		})
+	}
+
+	return nodes, nil
+}
