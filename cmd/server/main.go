@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"flag"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sickplanet/onvif2go/internal/onvif"
@@ -283,6 +285,10 @@ type Config struct {
 
 func loadConfig() (*Config, error) {
 	configPath := "onvif2go.config"
+	absPath, err := filepath.Abs(configPath)
+	if err != nil {
+		absPath = configPath
+	}
 
 	// Check if config exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -302,13 +308,18 @@ func loadConfig() (*Config, error) {
 			return nil, err
 		}
 
-		if err := os.WriteFile(configPath, data, 0644); err != nil {
+		comment := `// ONVIF2GO Configuration
+// This file contains the server configuration.
+// Lines starting with // are comments and will be ignored.
+// Command line arguments override these values.
+`
+		content := append([]byte(comment), data...)
+
+		if err := os.WriteFile(configPath, content, 0644); err != nil {
 			return nil, err
 		}
 
-		//if debugEnabled {//must inform the user every time
-		log.Printf("Default config created at %s", configPath)
-		//}
+		log.Printf("Default config created at %s", absPath)
 
 		return config, nil
 	}
@@ -319,8 +330,14 @@ func loadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	// Find start of JSON object to ignore comments
+	idx := bytes.IndexByte(data, '{')
+	if idx == -1 {
+		return nil, fmt.Errorf("invalid config file: no JSON object found")
+	}
+
 	var config Config
-	if err := json.Unmarshal(data, &config); err != nil {
+	if err := json.Unmarshal(data[idx:], &config); err != nil {
 		return nil, err
 	}
 
@@ -378,10 +395,20 @@ func main() {
 	server.setupRoutes(mux)
 
 	addr := fmt.Sprintf(":%d", config.Port)
-	log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
 	log.Printf("RTSP Server listening on rtsp://localhost:%d", config.RTSPPort)
 
-	if err := http.ListenAndServe(addr, mux); err != nil {
-		log.Fatal(err)
+	if config.UseSSL {
+		if config.SSLCert == "" || config.SSLKey == "" {
+			log.Fatal("SSL enabled but sslCert or sslKey not specified in config")
+		}
+		log.Printf("Starting ONVIF2GO v%s on https://localhost%s", Version, addr)
+		if err := http.ListenAndServeTLS(addr, config.SSLCert, config.SSLKey, mux); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			log.Fatal(err)
+		}
 	}
 }

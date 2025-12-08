@@ -9,7 +9,12 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/cmd/server"
+            "program": "${workspaceFolder}/cmd/server"//,
+            // "args": [
+            //     "-port=8080",
+            //     "-rtsp-port=8554",
+            //     "-debug=true"
+            // ]
         }
     ]
 }

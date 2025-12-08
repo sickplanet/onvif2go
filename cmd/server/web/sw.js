@@ -1,4 +1,4 @@
-const CACHE_NAME = "odm-pwa-v1";
+const CACHE_NAME = "onvif2go-pwa-v1";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
