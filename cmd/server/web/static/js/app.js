@@ -315,6 +315,8 @@ class ONVIFDeviceManager {
         this.userCameras = document.getElementById('userCameras');
         this.userPTZGroup = document.getElementById('userPTZGroup');
         this.userPTZAllowed = document.getElementById('userPTZAllowed');
+        this.userRTSPGroup = document.getElementById('userRTSPGroup');
+        this.userRTSPAllowed = document.getElementById('userRTSPAllowed');
         this.cancelUserEdit = document.getElementById('cancelUserEdit');
         this.deleteUserBtn = document.getElementById('deleteUserBtn');
         
@@ -1736,6 +1738,9 @@ console.log('Original error message:', error.message);
         if (this.userPTZGroup) {
             this.userPTZGroup.classList.toggle('hidden', isAdminChecked);
         }
+        if (this.userRTSPGroup) {
+            this.userRTSPGroup.classList.toggle('hidden', isAdminChecked);
+        }
         if (this.userAdminAccessNote) {
             this.userAdminAccessNote.classList.toggle('hidden', !isAdminChecked);
         }
@@ -1744,10 +1749,12 @@ console.log('Original error message:', error.message);
     renderCameraCheckboxes() {
         const selectedCameras = this.selectedUser?.cameras || [];
         const selectedPTZ = this.selectedUser?.ptzAllowed || [];
+        const selectedRTSP = this.selectedUser?.rtspAllowed || [];
 
         if (this.devices.length === 0) {
             this.userCameras.innerHTML = '<p class="text-muted">No cameras available</p>';
             this.userPTZAllowed.innerHTML = '<p class="text-muted">No cameras available</p>';
+            this.userRTSPAllowed.innerHTML = '<p class="text-muted">No cameras available</p>';
             return;
         }
 
@@ -1766,6 +1773,14 @@ console.log('Original error message:', error.message);
                 ${this.escapeHtml(device.name)}
             </label>
         `).join('');
+
+        this.userRTSPAllowed.innerHTML = this.devices.map(device => `
+            <label>
+                <input type="checkbox" name="rtspAllowed" value="${this.escapeHtml(device.id)}"
+                    ${selectedRTSP.includes(device.id) ? 'checked' : ''}>
+                ${this.escapeHtml(device.name)}
+            </label>
+        `).join('');
     }
 
     async submitUserForm(e) {
@@ -1780,10 +1795,13 @@ console.log('Original error message:', error.message);
 
         let cameras = [];
         let ptzAllowed = [];
+        let rtspAllowed = [];
         if (!isAdmin) {
             cameras = Array.from(this.userCameras.querySelectorAll('input[name="cameras"]:checked'))
                 .map(cb => cb.value);
             ptzAllowed = Array.from(this.userPTZAllowed.querySelectorAll('input[name="ptzAllowed"]:checked'))
+                .map(cb => cb.value);
+            rtspAllowed = Array.from(this.userRTSPAllowed.querySelectorAll('input[name="rtspAllowed"]:checked'))
                 .map(cb => cb.value);
         }
 
@@ -1804,14 +1822,16 @@ console.log('Original error message:', error.message);
                     password,
                     isAdmin,
                     cameras,
-                    ptzAllowed
+                    ptzAllowed,
+                    rtspAllowed
                 });
                 this.showToast('User created successfully', 'success');
             } else {
                 const updateData = {
                     isAdmin,
                     cameras,
-                    ptzAllowed
+                    ptzAllowed,
+                    rtspAllowed
                 };
                 if (password) {
                     updateData.password = password;

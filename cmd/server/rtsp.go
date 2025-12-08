@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"log"
 	"net/url"
 	"strings"
@@ -115,8 +116,58 @@ func (s *RTSPService) OnDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx) (*ba
 	token := values.Get("token")
 	isInternal := token == s.internalToken
 
-	if !exists || (!device.IsPublic && !isInternal) {
+	if !exists {
 		return &base.Response{StatusCode: base.StatusNotFound}, nil, nil
+	}
+
+	if !device.IsPublic && !isInternal {
+		// Check authentication
+		authHeader := ctx.Request.Header["Authorization"]
+		if len(authHeader) == 0 {
+			return &base.Response{
+				StatusCode: base.StatusUnauthorized,
+				Header: base.Header{
+					"WWW-Authenticate": base.HeaderValue{`Basic realm="onvif2go"`},
+				},
+			}, nil, nil
+		}
+
+		// Parse Basic Auth
+		authParts := strings.SplitN(authHeader[0], " ", 2)
+		if len(authParts) != 2 || authParts[0] != "Basic" {
+			return &base.Response{StatusCode: base.StatusUnauthorized}, nil, nil
+		}
+
+		payload, err := base64.StdEncoding.DecodeString(authParts[1])
+		if err != nil {
+			return &base.Response{StatusCode: base.StatusUnauthorized}, nil, nil
+		}
+
+		pair := strings.SplitN(string(payload), ":", 2)
+		if len(pair) != 2 {
+			return &base.Response{StatusCode: base.StatusUnauthorized}, nil, nil
+		}
+
+		username, password := pair[0], pair[1]
+		user := s.app.userStore.Get(username)
+		if user == nil || !checkPassword(password, user.PasswordHash) {
+			return &base.Response{StatusCode: base.StatusUnauthorized}, nil, nil
+		}
+
+		// Check permissions
+		allowed := user.IsAdmin
+		if !allowed {
+			for _, allowedID := range user.RTSPAllowed {
+				if allowedID == deviceID {
+					allowed = true
+					break
+				}
+			}
+		}
+
+		if !allowed {
+			return &base.Response{StatusCode: base.StatusForbidden}, nil, nil
+		}
 	}
 
 	// Default profile if not specified

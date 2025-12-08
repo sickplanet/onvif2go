@@ -203,6 +203,9 @@ func normalizeUser(user *User) {
 	if user.PTZAllowed == nil {
 		user.PTZAllowed = []string{}
 	}
+	if user.RTSPAllowed == nil {
+		user.RTSPAllowed = []string{}
+	}
 }
 
 // DeviceStore persists camera entries in BoltDB.

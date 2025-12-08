@@ -33,6 +33,7 @@ type User struct {
 	IsDefaultAdmin bool     `json:"isDefaultAdmin"`
 	Cameras        []string `json:"cameras"`
 	PTZAllowed     []string `json:"ptzAllowed"`
+	RTSPAllowed    []string `json:"rtspAllowed"`
 }
 
 // UserResponse represents a user without password hash
@@ -42,6 +43,7 @@ type UserResponse struct {
 	IsDefaultAdmin bool     `json:"isDefaultAdmin"`
 	Cameras        []string `json:"cameras"`
 	PTZAllowed     []string `json:"ptzAllowed"`
+	RTSPAllowed    []string `json:"rtspAllowed"`
 }
 
 // Session represents a user session

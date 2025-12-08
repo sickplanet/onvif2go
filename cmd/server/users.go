@@ -7,19 +7,21 @@ import (
 
 // CreateUserRequest represents a user creation request
 type CreateUserRequest struct {
-	Username   string   `json:"username"`
-	Password   string   `json:"password"`
-	IsAdmin    bool     `json:"isAdmin"`
-	Cameras    []string `json:"cameras"`
-	PTZAllowed []string `json:"ptzAllowed"`
+	Username    string   `json:"username"`
+	Password    string   `json:"password"`
+	IsAdmin     bool     `json:"isAdmin"`
+	Cameras     []string `json:"cameras"`
+	PTZAllowed  []string `json:"ptzAllowed"`
+	RTSPAllowed []string `json:"rtspAllowed"`
 }
 
 // UpdateUserRequest represents a user update request
 type UpdateUserRequest struct {
-	Password   *string  `json:"password,omitempty"`
-	IsAdmin    *bool    `json:"isAdmin,omitempty"`
-	Cameras    []string `json:"cameras,omitempty"`
-	PTZAllowed []string `json:"ptzAllowed,omitempty"`
+	Password    *string  `json:"password,omitempty"`
+	IsAdmin     *bool    `json:"isAdmin,omitempty"`
+	Cameras     []string `json:"cameras,omitempty"`
+	PTZAllowed  []string `json:"ptzAllowed,omitempty"`
+	RTSPAllowed []string `json:"rtspAllowed,omitempty"`
 }
 
 // handleListUsers lists all users (admin only)
@@ -38,6 +40,7 @@ func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
 			IsDefaultAdmin: u.IsDefaultAdmin,
 			Cameras:        u.Cameras,
 			PTZAllowed:     u.PTZAllowed,
+			RTSPAllowed:    u.RTSPAllowed,
 		}
 	}
 
@@ -81,9 +84,14 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	if ptzAllowed == nil {
 		ptzAllowed = []string{}
 	}
+	rtspAllowed := req.RTSPAllowed
+	if rtspAllowed == nil {
+		rtspAllowed = []string{}
+	}
 	if req.IsAdmin {
 		cameras = []string{}
 		ptzAllowed = []string{}
+		rtspAllowed = []string{}
 	}
 
 	user := &User{
@@ -93,6 +101,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		IsDefaultAdmin: isFirstUser,
 		Cameras:        cameras,
 		PTZAllowed:     ptzAllowed,
+		RTSPAllowed:    rtspAllowed,
 	}
 
 	if err := s.userStore.Create(user); err != nil {
@@ -106,6 +115,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		IsDefaultAdmin: user.IsDefaultAdmin,
 		Cameras:        user.Cameras,
 		PTZAllowed:     user.PTZAllowed,
+		RTSPAllowed:    user.RTSPAllowed,
 	})
 }
 
@@ -153,12 +163,16 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, userna
 	if user.IsAdmin {
 		user.Cameras = []string{}
 		user.PTZAllowed = []string{}
+		user.RTSPAllowed = []string{}
 	} else {
 		if req.Cameras != nil {
 			user.Cameras = req.Cameras
 		}
 		if req.PTZAllowed != nil {
 			user.PTZAllowed = req.PTZAllowed
+		}
+		if req.RTSPAllowed != nil {
+			user.RTSPAllowed = req.RTSPAllowed
 		}
 	}
 
@@ -173,6 +187,7 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, userna
 		IsDefaultAdmin: user.IsDefaultAdmin,
 		Cameras:        user.Cameras,
 		PTZAllowed:     user.PTZAllowed,
+		RTSPAllowed:    user.RTSPAllowed,
 	})
 }
 
