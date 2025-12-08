@@ -135,7 +135,7 @@ func (s *Server) handlePTZMove(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Warning: unable to read PTZ status before move: %v", err)
 	}
 
-	moveErr := client.PTZMove(profileToken, struct{ X, Y float64 }{req.Pan, req.Tilt}, struct{ X, Y float64 }{req.Zoom, 0})
+	moveErr := client.PTZMove(profileToken, struct{ X, Y float64 }{req.Pan, req.Tilt}, req.Zoom)
 
 	if moveErr == nil {
 		time.Sleep(300 * time.Millisecond)

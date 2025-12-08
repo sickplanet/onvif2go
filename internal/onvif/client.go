@@ -316,14 +316,14 @@ func (c *Client) GetSnapshotURI(profileToken string) (string, error) {
 }
 
 // PTZMove performs a continuous PTZ move
-func (c *Client) PTZMove(profileToken string, panTilt, zoom struct{ X, Y float64 }) error {
+func (c *Client) PTZMove(profileToken string, panTilt struct{ X, Y float64 }, zoom float64) error {
 	body := fmt.Sprintf(`<tptz:ContinuousMove>
 		<tptz:ProfileToken>%s</tptz:ProfileToken>
 		<tptz:Velocity>
-			<tt:PanTilt x="%.2f" y="%.2f"/>
-			<tt:Zoom x="%.2f"/>
+			<tt:PanTilt x="%f" y="%f"/>
+			<tt:Zoom x="%f"/>
 		</tptz:Velocity>
-	</tptz:ContinuousMove>`, profileToken, panTilt.X, panTilt.Y, zoom.X)
+	</tptz:ContinuousMove>`, profileToken, panTilt.X, panTilt.Y, zoom)
 
 	serviceURL := c.endpoint + "/onvif/ptz_service"
 
