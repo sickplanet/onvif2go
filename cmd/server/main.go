@@ -2,11 +2,13 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/sickplanet/onvif2go/internal/onvif"
@@ -269,13 +271,92 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.Handle("/", noCache(fileServer))
 }
 
+type Config struct {
+	Port     int    `json:"port"`
+	RTSPPort int    `json:"rtsp-port"`
+	Debug    bool   `json:"debug"`
+	UseSSL   bool   `json:"useSSL"`
+	SSLCert  string `json:"sslCert"`
+	SSLKey   string `json:"sslKey"`
+	Log2File string `json:"log2File"`
+}
+
+func loadConfig() (*Config, error) {
+	configPath := "onvif2go.config"
+
+	// Check if config exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// Create default config
+		config := &Config{
+			Port:     8080,
+			RTSPPort: 8554,
+			Debug:    false,
+			UseSSL:   false,
+			SSLCert:  "",
+			SSLKey:   "",
+			Log2File: "",
+		}
+
+		data, err := json.MarshalIndent(config, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+
+		if err := os.WriteFile(configPath, data, 0644); err != nil {
+			return nil, err
+		}
+
+		//if debugEnabled {//must inform the user every time
+		log.Printf("Default config created at %s", configPath)
+		//}
+
+		return config, nil
+	}
+
+	// Read existing config
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
 func main() {
+	// Check if arguments are provided
+	useConfig := len(os.Args) == 1
+
 	port := flag.Int("port", 8080, "Server port")
 	rtspPort := flag.Int("rtsp-port", 8554, "RTSP Server port")
 	debugFlag := flag.Bool("debug", false, "Enable verbose debug logging")
 	flag.Parse()
 
-	debugEnabled = *debugFlag || envBool("DEBUG")
+	var config *Config
+	if useConfig {
+		var err error
+		config, err = loadConfig()
+		if err != nil {
+			log.Printf("Failed to load config: %v, using defaults", err)
+			config = &Config{
+				Port:     *port,
+				RTSPPort: *rtspPort,
+				Debug:    *debugFlag,
+			}
+		}
+	} else {
+		config = &Config{
+			Port:     *port,
+			RTSPPort: *rtspPort,
+			Debug:    *debugFlag,
+		}
+	}
+
+	debugEnabled = config.Debug || envBool("DEBUG")
 	onvif.Debug = debugEnabled
 	if debugEnabled {
 		log.Printf("Debug logging enabled")
@@ -288,7 +369,7 @@ func main() {
 	defer server.Close()
 
 	// Start RTSP Server
-	server.rtspService = NewRTSPService(server, fmt.Sprintf(":%d", *rtspPort))
+	server.rtspService = NewRTSPService(server, fmt.Sprintf(":%d", config.RTSPPort))
 	if err := server.rtspService.Start(); err != nil {
 		log.Printf("Failed to start RTSP server: %v", err)
 	}
@@ -296,9 +377,9 @@ func main() {
 	mux := http.NewServeMux()
 	server.setupRoutes(mux)
 
-	addr := fmt.Sprintf(":%d", *port)
+	addr := fmt.Sprintf(":%d", config.Port)
 	log.Printf("Starting ONVIF2GO v%s on http://localhost%s", Version, addr)
-	log.Printf("RTSP Server listening on rtsp://localhost:%d", *rtspPort)
+	log.Printf("RTSP Server listening on rtsp://localhost:%d", config.RTSPPort)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)

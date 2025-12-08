@@ -52,7 +52,7 @@ func NewRTSPService(app *Server, address string) *RTSPService {
 
 // Start starts the RTSP server
 func (s *RTSPService) Start() error {
-	log.Printf("Starting RTSP server on %s", s.server.RTSPAddress)
+	//log.Printf("Starting RTSP server on %s", s.server.RTSPAddress)
 	return s.server.Start()
 }
 
